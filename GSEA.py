@@ -8,7 +8,7 @@ from collections import defaultdict
 import os
 from tabulate import tabulate
 
-print("hello world")
+
 import_path = '/Users/Troks27/Desktop/TrokaChat for Publication - R Scripts/TrokaChat Publication/TrokaChat/TrokaChat Output/'
 output_path = '/Users/Troks27/Desktop/TrokaChat for Publication - R Scripts/TrokaChat Publication/TrokaChat/GSEA/'
 files_list = ['output_H_allpathways', 'output_NL_allpathways', 'output_LS_allpathways']
