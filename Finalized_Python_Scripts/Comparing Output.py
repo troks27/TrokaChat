@@ -1,10 +1,13 @@
 import pandas as pd
 from tabulate import tabulate
 
-conditions_list = ['H','NL','LS']
-import_filepath = '/Users/Troks27/Desktop/TrokaChat for Publication - R Scripts/TrokaChat Publication/TrokaChat/CvsT/'
-export_filepath = '/Users/Troks27/Desktop/TrokaChat for Publication - R Scripts/TrokaChat Publication/TrokaChat/CvsT/'
+conditions_list = ['NG','DIAB']
+import_filepath = '/Volumes/LaCie/Bushra_study_2.28.24/TrokaChat/TrokaChat Output/'
+export_filepath = '/Volumes/LaCie/Bushra_study_2.28.24/TrokaChat/TrokaChat Compare/'
 
+#conditions_list = ['H','NL','LS']
+#import_filepath = '/Users/Troks27/Desktop/TrokaChat for Publication - R Scripts/TrokaChat Publication/TrokaChat/CvsT/'
+#export_filepath = '/Users/Troks27/Desktop/TrokaChat for Publication - R Scripts/TrokaChat Publication/TrokaChat/CvsT/'
 
 
 
@@ -188,7 +191,7 @@ else:
        letters = ['x', 'y']
 
        for i in range(len(conditions_list)):
-              d[letters[i]] = pd.read_excel(import_filepath + "output_" + conditions_list[i] + "_allpathways.xlsx")
+              d[letters[i]] = pd.read_excel(import_filepath + conditions_list[i] + "_allpathways.xlsx")
               d[letters[i]]['Sample Ident'] = conditions_list[i]
 
        int_y_x = d[letters[1]].merge(d[letters[0]], on=['Ligand', 'Receptor', 'Source', 'Target'], how='inner').reset_index(drop=True)

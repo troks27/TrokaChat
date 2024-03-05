@@ -470,24 +470,45 @@ class TrokaChat_Computation:
 
 
 
-filename = TrokaChat_import(
-    input_path = '/Users/troks27/Desktop/TrokaChat All for Publication/TrokaChat/TrokaChat/csv1',
-    file_prefixes = ['H_vs_H','NL_vs_H','LS_vs_H', 'nulldistavgs_H_vs_H','nulldistavgs_NL_vs_H','nulldistavgs_LS_vs_H'],
-    output_path = '/Users/troks27/Desktop/TrokaChat All for Publication/TrokaChat/TrokaChat',
-    pct_min = 0.1)
+#filename = TrokaChat_import(
+#    input_path = '/Users/troks27/Desktop/TrokaChat All for Publication/TrokaChat/TrokaChat/csv1',
+#    file_prefixes = ['H_vs_H','NL_vs_H','LS_vs_H', 'nulldistavgs_H_vs_H','nulldistavgs_NL_vs_H','nulldistavgs_LS_vs_H'],
+#    output_path = '/Users/troks27/Desktop/TrokaChat All for Publication/TrokaChat/TrokaChat',
+#    pct_min = 0.1)
 
 #filename.import_data()
 
+#TrokaObject = TrokaChat_Computation(
+#    import_folder = 'exp',
+#    general_filepath = '/Users/troks27/Desktop/TrokaChat All for Publication/TrokaChat/TrokaChat/',
+#    output_path = '/Users/troks27/Desktop/TrokaChat All for Publication/TrokaChat/TrokaChat/',
+#    files_list = ['H DEGs', 'NL DEGs', 'LS DEGs','nulldistavgs_H DEGs','nulldistavgs_NL DEGs','nulldistavgs_LS DEGs'],
+#    species = 'human',
+#    sample_name_from_R = 'sample',
+#    counts_file = 'counts',
+#    min_clus_percent = 0
+#)
+#TrokaObject.process_files()
+
+
+
+
+filename = TrokaChat_import(
+    input_path = '/Volumes/LaCie/Bushra_study_2.28.24/TrokaChat/csv1',
+    file_prefixes = ['NG_vs_NG','DIAB_vs_NG', 'nulldistavgs_NG_vs_NG','nulldistavgs_DIAB_vs_NG'],
+    output_path = '/Volumes/LaCie/Bushra_study_2.28.24/TrokaChat/DEG Output',
+    pct_min = 0.1)
+
+filename.import_data()
+
 TrokaObject = TrokaChat_Computation(
-    import_folder = 'exp',
-    general_filepath = '/Users/troks27/Desktop/TrokaChat All for Publication/TrokaChat/TrokaChat/',
-    output_path = '/Users/troks27/Desktop/TrokaChat All for Publication/TrokaChat/TrokaChat/',
-    files_list = ['H DEGs', 'NL DEGs', 'LS DEGs','nulldistavgs_H DEGs','nulldistavgs_NL DEGs','nulldistavgs_LS DEGs'],
-    species = 'human',
+    import_folder = 'DEG Output',
+    general_filepath = '/Volumes/LaCie/Bushra_study_2.28.24/TrokaChat/',
+    output_path = '/Volumes/LaCie/Bushra_study_2.28.24/TrokaChat/TrokaChat Output/',
+    files_list = ['NG DEGs', 'DIAB DEGs', 'nulldistavgs_NG DEGs','nulldistavgs_DIAB DEGs'],
+    species = 'mouse',
     sample_name_from_R = 'sample',
     counts_file = 'counts',
     min_clus_percent = 0
 )
-#TrokaObject.process_files()
-
-
+TrokaObject.process_files()

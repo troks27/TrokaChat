@@ -17,25 +17,25 @@ from functools import reduce
 import matplotlib.cm as cm
 
 mpl.use('macosx')
-conditions_list = ['H','NL','LS']
-colors_list = ["#00CD6C", "#009ADE", "#FF1F5B"]
+conditions_list = ['NG','DIAB']
+colors_list = ["#00CD6C", "#009ADE"]
 conditions_to_test = 2
-counts_filepath = "/Users/troks27/Desktop/TrokaChat All for Publication/TrokaChat for Publication - R Scripts/TrokaChat Publication/TrokaChat/DEG Output/"
-import_filepath = '/Users/troks27/Desktop/TrokaChat All for Publication/TrokaChat for Publication - R Scripts/TrokaChat Publication/TrokaChat/TrokaChat Compare/'
-nulldist_filepath = '/Users/troks27/Desktop/TrokaChat All for Publication/TrokaChat for Publication - R Scripts/TrokaChat Publication/TrokaChat/TrokaChat Output/'
-output_filepath = '/Users/troks27/Desktop/PYTC TEST/TrokaChat/'
-twoway_filenames = ["H_LS_output_int", "NL_H_output_int", "NL_LS_output_int"]
-threeway_filename = ["NL_LS_H_output_int"]
+counts_filepath = "/Volumes/LaCie/Bushra_study_2.28.24/TrokaChat/DEG Output/"
+import_filepath = '/Volumes/LaCie/Bushra_study_2.28.24/TrokaChat/TrokaChat Compare/'
+nulldist_filepath = '/Volumes/LaCie/Bushra_study_2.28.24/TrokaChat/TrokaChat Output/'
+output_filepath = '/Volumes/LaCie/Bushra_study_2.28.24/TrokaChat/TrokaChat Charts/'
+twoway_filenames = ["DIAB_NG_output_int"]
+threeway_filename = []
 pval_cutoff = 0.05
-condition_of_interest = "H"
+condition_of_interest = "NG"
 signaling_group = ["Secreted Signaling"]
 ligand = []
 receptor = []
 source = []
 target = []
 fig_labels = "No"
-top = 500
-names = [0,1,2,3,4,5,6,7,8,9,10,11]
+top = 100000
+names = [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25]
 #Either "LR_name" or "Source to Target"
 label_source = "LR_name"
 min_num_cells = 30
@@ -157,7 +157,7 @@ print(namedict)
 
 
 for i in range(len(conditions_list)):
-    data = pd.read_csv(nulldist_filepath + "output_NULL_DIST_" + namedict[i] + "_allpathways.csv")
+    data = pd.read_excel(nulldist_filepath + "NULL_DIST_" + namedict[i] + " DEGs_allpathways.xlsx")
     stdev = statistics.stdev(data.iloc[:,4])
     mean = statistics.mean(data.iloc[:,4])
     combined["zscore_"+namedict[i]] = combined["Communication Score_"+namedict[i]].sub(mean).div(stdev)
