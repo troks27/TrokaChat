@@ -21,6 +21,7 @@
 #' TrokaChat.DEG(object = merged_seurat_all_finalsubset_filtered,
 #'               samples = 3,
 #'               shortidents = c("H","NL","LS"),
+#'               control_condition = "H",
 #'               filepath = "./TrokaChat/",
 #'               export_folder_1 = "csv1",
 #'               clusters = "combined_cluster_number",
@@ -28,7 +29,8 @@
 #'               cluster_range = 0:11,
 #'               sample_species = "human",
 #'               cluster_pct_thresh = 0,
-#'               directory_path = "/Users/Troks27/Desktop/8. Leticia All/Python TrokaChat/")
+#'               directory_path = "/Users/Troks27/Desktop/8. Leticia All/Python TrokaChat/",
+#'               DefaultAssay = "RNA")
 #'
 #' @export
 #' @importFrom Seurat Idents SetIdent FindMarkers DefaultAssay
@@ -41,9 +43,9 @@
 #' @importFrom purrr map_chr
 #' @importFrom grDevices col2rgb
 
-TrokaChat.DEG <- function(object, samples, shortidents, filepath, export_folder_1,
+TrokaChat.DEG <- function(object, samples, control_condition, shortidents, filepath, export_folder_1,
                           clusters, sample_clus, cluster_range, sample_species,
-                          cluster_pct_thresh, directory_path) {
+                          cluster_pct_thresh, directory_path, DefaultAssay) {
   ## Selecting Correct Ligand-Receptor (LR) Database for Species based on sample_species ----
   # Then, it loads the respective database and creates a vector of signaling genes.
   # Input: Seurat object, sample_species ("human" or "mouse")
@@ -89,7 +91,8 @@ TrokaChat.DEG <- function(object, samples, shortidents, filepath, export_folder_
   #Idents(object)
   n_cells_bycondition_percluster<-table(object@active.ident, object@meta.data$sample)
   n_cells_bycondition_percluster <- n_cells_bycondition_percluster[ , shortidents]
-  #n_cells_bycondition_percluster
+  print("#cells")
+  print(n_cells_bycondition_percluster)
 
 
   ## Create List of Cluster Combinations for DEG analysis ----
@@ -98,55 +101,94 @@ TrokaChat.DEG <- function(object, samples, shortidents, filepath, export_folder_
   # Output: total_list
   group <- paste0(shortidents, "_vs_", shortidents[1])
 
-  total_list <- vector("list", length(shortidents))
-  list_of_lists <- vector("list", length(shortidents))
+  #list_of_lists <- vector("list", length(shortidents))
 
+  # INSERT HERE
 
-  for (i in seq_along(shortidents)) {
-    my_list <- vector("list", length(shortidents))
+  # Step 1: Calculate cutoff for each condition
+  # Adjust the method to calculate cutoffs for each condition
+  cutoffs <- sapply(shortidents, function(condition) {
+    cells_in_condition <- n_cells_bycondition_percluster[, condition]
+    if(cluster_pct_thresh > 0) {
+      return(sum(cells_in_condition) * (cluster_pct_thresh / 100))
+    } else {
+      return(3) # Use 3 as the cutoff when cluster_pct_thresh is 0
+    }
+  }, USE.NAMES = TRUE)
 
-    cutoff <- sum(n_cells_bycondition_percluster[, i]) * (cluster_pct_thresh / 100)
+  # Adjust to properly handle cluster numbering starting from 0
+  valid_clusters_per_condition <- lapply(shortidents, function(condition) {
+    cell_counts <- n_cells_bycondition_percluster[, condition]
+    # Find clusters meeting the criteria
+    valid_clusters_indices <- which(cell_counts >= max(cutoffs[condition], 3))
 
-    new_element <- names(which(n_cells_bycondition_percluster[, i] <= 3 |
-                                 n_cells_bycondition_percluster[, i] <= floor(cutoff)))
-    my_list[[i]] <- if(length(new_element) == 0) NA else new_element
-
-    my_list_i <- paste0(shortidents[i], "_", my_list[[i]])
-
-    my_list_2_i = {}
-    # Create the list using nested lapply
-    my_list_2_i <- lapply(1:length(shortidents), function(i) {
-      ident_values <- lapply(cluster_range, function(a) {
-        ident_name <- shortidents[i]
-        paste0(ident_name, "_", a)
-      })
-      # Flatten the list to a vector and sort it
-      mixedsort(unlist(ident_values))
-    })
-
-    my_list_3_i <- setdiff(my_list_2_i[[1]], my_list_i)
-
-    clus_nums <- as.numeric(gsub(".*?([0-9]+).*", "\\1", my_list_3_i))
-    my_list_4_i <- as.list(clus_nums)
-
-    list_i <- list(unlist(my_list_4_i))
-
-    list_i_final <- list_i
-    list_of_lists[[i]] <- list_i[[1]]
-
-    for (a in seq_along(my_list_4_i)) {
-      rem <- my_list_4_i[[a]]
-      element <- list_i[[1]][!list_i[[1]] %in% rem]
-      element <- purrr::map_chr(element, ~ paste0(shortidents[1], "_", .))
-      list_i_final[[a]] <- element
+    # Adjust cluster numbering to start from 0 and assign names
+    valid_clusters_names <- if (length(valid_clusters_indices) > 0) {
+      # Subtract 1 to adjust for 0-based numbering
+      paste0(condition, "_", valid_clusters_indices - 1)
+    } else {
+      character(0) # Return an empty character vector if no valid clusters
     }
 
-    labels <- purrr::map_chr(my_list_4_i, ~ paste0(shortidents[i], "_", .))
-    names(list_i_final) <- labels
+    return(valid_clusters_names)
+  })
 
-    total_list[[i]] <- list_i_final
+  print(valid_clusters_per_condition)
+
+  # Step 3: Find clusters valid across all conditions
+  # Strip prefixes to get just the numeric part of cluster identifiers
+  cluster_numbers_per_condition <- lapply(valid_clusters_per_condition, function(clusters) {
+    as.integer(sub(".*_", "", clusters)) # Extracts the numeric part
+  })
+
+  # Find common cluster numbers across all conditions
+  common_cluster_numbers <- Reduce(intersect, cluster_numbers_per_condition)
+
+
+  print("LOOK")
+  print(common_cluster_numbers)
+
+
+  # Step 4: Generate comparisons for each condition
+  # Initialize total_list for storing comparison lists for each condition
+  total_list <- list()
+
+  # Generate comparisons for each condition
+  for (condition in shortidents) {
+    condition_list <- list()
+
+    # Rebuild valid cluster identifiers for the current condition based on common clusters
+    valid_clusters_for_condition <- paste0(condition, "_", common_cluster_numbers)
+
+    for (cluster_name in valid_clusters_for_condition) {
+      # Determine valid comparisons
+      if (condition == control_condition) {
+        # For the control condition, exclude the current cluster from its comparisons
+        valid_comparisons <- valid_clusters_for_condition[valid_clusters_for_condition != cluster_name]
+      } else {
+        # For experimental conditions, comparisons are against the control condition
+        # Limit to common clusters, ensuring the comparison is meaningful across conditions
+        control_clusters_for_comparison <- paste0(control_condition, "_", common_cluster_numbers)
+        # Exclude the cluster if it matches the numeric part of the experimental cluster
+        cluster_num <- sub(".*_", "", cluster_name)  # Extract numeric part
+        control_cluster_to_exclude <- paste0(control_condition, "_", cluster_num)
+        valid_comparisons <- control_clusters_for_comparison[control_clusters_for_comparison != control_cluster_to_exclude]
+      }
+
+      # Assign the list of valid comparisons to the condition list
+      condition_list[[cluster_name]] <- valid_comparisons
+    }
+
+    # Assign the condition list to the total list
+    total_list[[condition]] <- condition_list
   }
+
+
+
+  print("START")
   print(total_list)
+  print("END")
+
   saveRDS(total_list, file = "./TrokaChat/csv1/total_list.rds")
 
 
@@ -160,7 +202,7 @@ TrokaChat.DEG <- function(object, samples, shortidents, filepath, export_folder_
   rm(list=ls(pattern="_TrokaChat3"))
 
   object <- SetIdent(object, value = sample_clus)
-  DefaultAssay(object) <- "RNA"
+  DefaultAssay(object) <- DefaultAssay
   features = {}
   for (i in 1:length(total_list)){
     for(a in 1:length(total_list[[i]]))
@@ -212,12 +254,14 @@ TrokaChat.DEG <- function(object, samples, shortidents, filepath, export_folder_
   # Print the structure
   str(TC_all_split)
 
-  # Create the TC_overall_list
-  TC_overall_list<- lapply(1:length(total_list), function(i) {
-    temp <- TC_all_split
-    list <- setdiff(names(temp), list_of_lists[[i]])
-    temp[names(temp) %in% list == FALSE]
-  })
+  TC_overall_list =  TC_all_split
+  #INSERT HERE
+
+  print("NEW: CHECK")
+  str(TC_overall_list)
+  print("Length of ttoal list")
+  print(length(total_list))
+
   ## Conduct DEG With filtered list of genes ----
   # Run DEG analysis again but now using only significant genes from TC_overall_list.
   # Input: Seurat object, total_list, TC_overall_list
@@ -226,7 +270,7 @@ TrokaChat.DEG <- function(object, samples, shortidents, filepath, export_folder_
 
   for (i in 1:length(total_list)){
     for (a in 1:length(TC_overall_list[[i]])){
-      assign(print(paste0(group[i],paste0(gsub("\\D+", "", names(total_list[[i]][a]))),"_TrokaChat_",letters[i])), FindMarkers(object, logfc.threshold = 0,features = TC_overall_list[[i]][[a]]$gene, only.pos = FALSE, ident.1 = print(paste0(names(total_list[[i]][a]))), ident.2 = print(total_list[[i]][[a]])), envir = environment())
+      assign(print(paste0(group[i],paste0(gsub("\\D+", "", names(total_list[[i]][a]))),"_TrokaChat_",letters[i])), FindMarkers(object, logfc.threshold = 0,features = TC_overall_list[[a]]$gene, only.pos = FALSE, ident.1 = print(paste0(names(total_list[[i]][a]))), ident.2 = print(total_list[[i]][[a]])), envir = environment())
     }
   }
 
@@ -347,3 +391,7 @@ TrokaChat.DEG <- function(object, samples, shortidents, filepath, export_folder_
   }
 
 }
+
+
+
+
