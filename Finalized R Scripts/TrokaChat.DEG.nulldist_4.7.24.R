@@ -14,6 +14,7 @@
 #' @examples
 #' TrokaChat.DEG.nulldist(object = merged_seurat_all_finalsubset_filtered,
 #'                        shortidents = c("H","NL","LS"),
+#'                        control_condition = "H",
 #'                        filepath = "./TrokaChat/",
 #'                        export_folder = "csv1",
 #'                        clusters = "combined_cluster_number",
@@ -24,7 +25,7 @@
 #' @importFrom tidyr spread
 #' @importFrom data.table rbindlist
 #' @export
-TrokaChat.DEG.nulldist <- function(object, shortidents, filepath, export_folder, clusters, n.perms) {
+TrokaChat.DEG.nulldist <- function(object, shortidents,control_condition, filepath, export_folder, clusters, n.perms) {
 
   export_folder_1 = export_folder
   group <- paste0(shortidents, "_vs_", shortidents[1])
@@ -261,7 +262,10 @@ TrokaChat.DEG.nulldist <- function(object, shortidents, filepath, export_folder,
         cat(sprintf("\nStarting permutation iteration: %d\n", a))
 
         # Identifying the subset directly in object_final@meta.data for permutation
-        sample_indices <- which(object_final@meta.data$sample == paste0(shortidents[1],"_NEW") )
+        sample_indices <- which(object_final@meta.data$sample == paste0(control_condition,"_NEW") )
+
+        # Capturing cluster counts before permutation
+        cluster_counts_before <- table(object_final@meta.data$TrokaChat_clusters_new[sample_indices])
 
         cat("Before permutation:\n")
         print(head(object_final@meta.data$TrokaChat_clusters_new[sample_indices]))
@@ -274,12 +278,26 @@ TrokaChat.DEG.nulldist <- function(object, shortidents, filepath, export_folder,
 
         #View(object_final@meta.data)
 
-        object_final@meta.data[['sample_clus_TrokaChat']] <- ifelse(object_final@meta.data$sample == shortidents[1], paste0(object_final@meta.data$sample,"_", object_final@meta.data[[clusters]]), paste0(object_final@meta.data$sample,"_", object_final@meta.data$TrokaChat_clusters_new))
+        object_final@meta.data[['sample_clus_TrokaChat']] <- ifelse(object_final@meta.data$sample == control_condition, paste0(object_final@meta.data$sample,"_", object_final@meta.data[[clusters]]), paste0(object_final@meta.data$sample,"_", object_final@meta.data$TrokaChat_clusters_new))
         object_final <- SetIdent(object_final, value = 'sample_clus_TrokaChat')
 
         total_list_special <- total_list
         labels <- sub("_", "_NEW_", names(total_list_special[[1]]))
         names(total_list_special[[1]]) <- labels
+
+
+        # Capturing cluster counts after permutation
+        cluster_counts_after <- table(object_final@meta.data$TrokaChat_clusters_new[sample_indices])
+
+        # Comparing before and after counts
+        clusters_changed <- setdiff(names(cluster_counts_before), names(cluster_counts_after[cluster_counts_before == cluster_counts_after]))
+
+        # Printing the outcome
+        if (length(clusters_changed) == 0) {
+          cat("All cluster counts are the same\n")
+        } else {
+          cat("Cluster counts are different in clusters:", paste(clusters_changed, collapse=", "), "\n")
+        }
 
         #Conserved FindMarkers Function
         print("findMarkersAndCreateDF")
@@ -307,19 +325,37 @@ TrokaChat.DEG.nulldist <- function(object, shortidents, filepath, export_folder,
 
         cat(sprintf("\nStarting permutation iteration: %d\n", a))
 
-        sample_indices <- which(object_new@meta.data$sample == paste0(shortidents[c]) )
+        sample_indices <- which(object_new@meta.data$sample == paste0(shortidents[c]))
+
+        # Capturing cluster counts before permutation
+        cluster_counts_before <- table(object_new@meta.data$TrokaChat_clusters_new[sample_indices])
 
         cat("Before permutation:\n")
         print(head(object_new@meta.data$TrokaChat_clusters_new[sample_indices]))
 
         #Permute the labels
-        object_new@meta.data <- transform(object_new@meta.data, TrokaChat_clusters_new = sample(TrokaChat_clusters_new))
+        object_new@meta.data$TrokaChat_clusters_new[sample_indices] <- sample(object_new@meta.data$TrokaChat_clusters_new[sample_indices])
 
         cat("After permutation:\n")
         print(head(object_new@meta.data$TrokaChat_clusters_new[sample_indices]))
 
         object_new@meta.data[['sample_clus_TrokaChat']] <- ifelse(object_new@meta.data$sample == shortidents[c], paste0(object_new@meta.data$sample,"_", object_new@meta.data$TrokaChat_clusters_new), paste0(object_new@meta.data$sample,"_", object_new@meta.data[[clusters]]))
         object_new <- SetIdent(object_new, value = 'sample_clus_TrokaChat')
+
+        # Capturing cluster counts after permutation
+        cluster_counts_after <- table(object_new@meta.data$TrokaChat_clusters_new[sample_indices])
+
+        # Comparing before and after counts
+        clusters_changed <- setdiff(names(cluster_counts_before), names(cluster_counts_after[cluster_counts_before == cluster_counts_after]))
+
+        # Printing the outcome
+        if (length(clusters_changed) == 0) {
+          cat("All cluster counts are the same\n")
+        } else {
+          cat("Cluster counts are different in clusters:", paste(clusters_changed, collapse=", "), "\n")
+        }
+
+
 
         print("findMarkersAndCreateDF")
         #Function to replace conserved FindMarkers function
